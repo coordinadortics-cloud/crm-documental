@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <title>Gestión de Documentos</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <style>
+
+        body{
+            background: #f4f6f9;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .card{
+            border: none;
+            border-radius: 16px;
+            overflow: hidden;
+        }
+
+        .card-header{
+            background: linear-gradient(135deg, #0d1b2a, #1b263b);
+            padding: 25px;
+        }
+
+        .card-header h3{
+            margin: 0;
+            font-weight: 600;
+            letter-spacing: 1px;
+        }
+
+        .card-body{
+            padding: 30px;
+        }
+
+        .table{
+            margin-bottom: 0;
+        }
+
+        .table thead{
+            background: #1b263b;
+            color: white;
+        }
+
+        .table th{
+            padding: 15px;
+            font-weight: 600;
+        }
+
+        .table td{
+            padding: 15px;
+            vertical-align: middle;
+        }
+
+        .table tbody tr:hover{
+            background: #f8f9fa;
+            transition: 0.2s;
+        }
+
+        .badge{
+            padding: 8px 14px;
+            font-size: 0.85rem;
+            border-radius: 8px;
+        }
+
+        .btn{
+            border-radius: 8px;
+            font-weight: 500;
+        }
+
+        .btn-info{
+            color: white;
+        }
+
+        .btn-outline-secondary{
+            border-radius: 10px;
+            padding: 10px 25px;
+        }
+
+        .cliente-nombre{
+            color: #ced4da;
+            font-size: 0.95rem;
+            margin-top: 5px;
+        }
+
+    </style>
+
+</head>
+
+<body>
+
+<div class="container mt-5">
+
+    <div class="card shadow-lg">
+
+        <div class="card-header text-white">
+
+            <h3>Gestión de Documentos</h3>
+
+            <div class="cliente-nombre">
+
+                Cliente: {{ cliente.nombre }}
+
+            </div>
+
+        </div>
+
+        <div class="card-body">
+
+            <div class="table-responsive">
+
+                <table class="table table-hover align-middle">
+
+                    <thead>
+
+                        <tr>
+
+                            <th>Documento</th>
+                            <th>Estado</th>
+                            <th class="text-center">Acciones</th>
+
+                        </tr>
+
+                    </thead>
+
+                    <tbody>
+
+                        {% for item in data %}
+
+                        <tr>
+
+                            <td>
+
+                                {{ item.nombre }}
+
+                            </td>
+
+                            <td>
+
+                                {% if item.existe %}
+
+                                    <span class="badge bg-success">
+
+                                        Subido
+
+                                    </span>
+
+                                {% else %}
+
+                                    <span class="badge bg-danger">
+
+                                        Faltante
+
+                                    </span>
+
+                                {% endif %}
+
+                            </td>
+
+                            <td class="text-center">
+
+                                {% if item.existe %}
+
+                                    <a href="{{ item.archivo.archivo.url }}"
+                                       target="_blank"
+                                       class="btn btn-info btn-sm">
+
+                                       Ver
+
+                                    </a>
+
+                                    <a href="{% url 'actualizar_documento' item.archivo.id %}"
+                                       class="btn btn-warning btn-sm">
+
+                                       Actualizar
+
+                                    </a>
+
+                                    <a href="{% url 'eliminar_documento' item.archivo.id %}"
+                                       class="btn btn-danger btn-sm">
+
+                                       Eliminar
+
+                                    </a>
+
+                                {% else %}
+
+                                    <a href="{% url 'subir_documento' %}"
+                                       class="btn btn-primary btn-sm">
+
+                                       Subir
+
+                                    </a>
+
+                                {% endif %}
+
+                            </td>
+
+                        </tr>
+
+                        {% endfor %}
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+            <div class="mt-4">
+
+                <a href="/"
+                   class="btn btn-outline-secondary">
+
+                   Volver
+
+                </a>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+</body>
+</html>

@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <title>Gestión Documental</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <link rel="stylesheet"
+          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+
+    <style>
+
+        body{
+            background: #f4f6f9;
+            font-family: Arial, sans-serif;
+        }
+
+        .sidebar{
+            width: 250px;
+            height: 100vh;
+            position: fixed;
+            background: #212529;
+            padding-top: 20px;
+        }
+
+        .sidebar a{
+            color: white;
+            text-decoration: none;
+            display: block;
+            padding: 15px 20px;
+            transition: 0.3s;
+        }
+
+        .sidebar a:hover{
+            background: #343a40;
+        }
+
+        .content{
+            margin-left: 260px;
+            padding: 30px;
+        }
+
+        .card-dashboard{
+            border: none;
+            border-radius: 15px;
+            color: white;
+        }
+
+        .table{
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .table thead{
+            background: #212529;
+            color: white;
+        }
+
+        .card{
+            border-radius: 15px;
+        }
+
+        .logout-form{
+            padding: 15px 20px;
+        }
+
+    </style>
+
+</head>
+
+<body>
+
+<div class="sidebar">
+
+    <h3 class="text-white text-center mb-4">
+        Gestión Documental
+    </h3>
+
+    <a href="{% url 'lista_clientes' %}">
+        <i class="fa fa-users"></i>
+        Clientes
+    </a>
+
+    {% if perms.clientes.add_cliente %}
+    <a href="{% url 'crear_cliente' %}">
+        <i class="fa fa-user-plus"></i>
+        Nuevo Cliente
+    </a>
+    {% endif %}
+
+    {% if perms.clientes.add_documento %}
+    <a href="{% url 'subir_documento' %}">
+        <i class="fa fa-file-upload"></i>
+        Subir Documento
+    </a>
+    {% endif %}
+
+    <a href="{% url 'lista_asesores' %}">
+        <i class="fa fa-user-tie"></i>
+        Asesores
+    </a>
+
+    <a href="{% url 'exportar_excel' %}">
+        <i class="fa fa-file-excel"></i>
+        Exportar Excel
+    </a>
+
+    {% if perms.clientes.view_auditoria %}
+    <a href="{% url 'panel_auditoria' %}">
+        <i class="fa fa-shield-halved"></i>
+        Auditoría
+    </a>
+    {% endif %}
+
+    <div class="logout-form">
+
+        <form action="{% url 'logout' %}" method="POST">
+
+            {% csrf_token %}
+
+            <button type="submit" class="btn btn-danger w-100">
+
+                <i class="fa fa-sign-out-alt"></i>
+                Cerrar Sesión
+
+            </button>
+
+        </form>
+
+    </div>
+
+</div>
+
+<div class="content">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+
+        <div>
+
+            <h2>
+                Dashboard Clientes
+            </h2>
+
+            <p class="text-muted">
+                Gestión documental de clientes
+            </p>
+
+        </div>
+
+    </div>
+
+    <div class="row mb-4">
+
+        <div class="col-md-3">
+
+            <div class="card card-dashboard bg-primary shadow">
+
+                <div class="card-body">
+
+                    <h5>Total Clientes</h5>
+
+                    <h2>
+                        {{ total_clientes }}
+                    </h2>
+
+                </div>
+
+            </div>
+
+        </div>
+
+        <div class="col-md-3">
+
+            <div class="card card-dashboard bg-success shadow">
+
+                <div class="card-body">
+
+                    <h5>Completos</h5>
+
+                    <h2>
+                        {{ clientes_completos }}
+                    </h2>
+
+                </div>
+
+            </div>
+
+        </div>
+
+        <div class="col-md-3">
+
+            <div class="card card-dashboard bg-danger shadow">
+
+                <div class="card-body">
+
+                    <h5>Incompletos</h5>
+
+                    <h2>
+                        {{ clientes_incompletos }}
+                    </h2>
+
+                </div>
+
+            </div>
+
+        </div>
+
+        <div class="col-md-3">
+
+            <div class="card card-dashboard bg-dark shadow">
+
+                <div class="card-body">
+
+                    <h5>Asesores</h5>
+
+                    <h2>
+                        {{ total_asesores }}
+                    </h2>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <div class="card shadow border-0">
+
+        <div class="card-body">
+
+            <form method="GET" class="mb-4">
+
+                <div class="row">
+
+                    <div class="col-md-5">
+
+                        <input
+                            type="text"
+                            name="busqueda"
+                            class="form-control"
+                            placeholder="Buscar cliente...">
+
+                    </div>
+
+                    <div class="col-md-4">
+
+                        <select
+                            name="asesor"
+                            class="form-select">
+
+                            <option value="">
+                                Todos los asesores
+                            </option>
+
+                            {% for asesor in asesores %}
+
+                            <option value="{{ asesor.id }}">
+
+                                {{ asesor.codigo }}
+                                -
+                                {{ asesor.nombre }}
+
+                            </option>
+
+                            {% endfor %}
+
+                        </select>
+
+                    </div>
+
+                    <div class="col-md-3">
+
+                        <button
+                            class="btn btn-dark w-100"
+                            type="submit">
+
+                            Filtrar
+
+                        </button>
+
+                    </div>
+
+                </div>
+
+            </form>
+
+            <div class="table-responsive">
+
+                <table class="table table-hover align-middle">
+
+                    <thead>
+
+                        <tr>
+
+                            <th>Cliente</th>
+                            <th>Documento</th>
+                            <th>Asesor</th>
+                            <th>Estado</th>
+                            <th>Faltantes</th>
+                            <th>Acciones</th>
+
+                        </tr>
+
+                    </thead>
+
+                    <tbody>
+
+                        {% for item in data %}
+
+                        <tr>
+
+                            <td>
+                                {{ item.cliente.nombre }}
+                            </td>
+
+                            <td>
+                                {{ item.cliente.documento }}
+                            </td>
+
+                            <td>
+
+                                {% if item.cliente.asesor %}
+
+                                    {{ item.cliente.asesor.codigo }}
+                                    -
+                                    {{ item.cliente.asesor.nombre }}
+
+                                {% else %}
+
+                                    Sin asesor
+
+                                {% endif %}
+
+                            </td>
+
+                            <td>
+
+                                {% if item.completo %}
+
+                                    <span class="badge bg-success">
+                                        Completo
+                                    </span>
+
+                                {% else %}
+
+                                    <span class="badge bg-danger">
+                                        Incompleto
+                                    </span>
+
+                                {% endif %}
+
+                            </td>
+
+                            <td>
+
+                                {% if item.faltantes %}
+
+                                    {% for faltante in item.faltantes %}
+
+                                        <span class="badge bg-warning text-dark">
+
+                                            {{ faltante }}
+
+                                        </span>
+
+                                    {% endfor %}
+
+                                {% else %}
+
+                                    <span class="text-success">
+
+                                        Todos cargados
+
+                                    </span>
+
+                                {% endif %}
+
+                            </td>
+
+                            <td>
+
+                                <a href="{% url 'ver_documentos' item.cliente.id %}"
+                                   class="btn btn-info btn-sm">
+
+                                   <i class="fa fa-eye"></i>
+
+                                </a>
+
+                                {% if perms.clientes.change_cliente %}
+                                <a href="{% url 'editar_cliente' item.cliente.id %}"
+                                   class="btn btn-warning btn-sm">
+
+                                   <i class="fa fa-edit"></i>
+
+                                </a>
+                                {% endif %}
+
+                                {% if perms.clientes.delete_cliente %}
+                                <a href="{% url 'eliminar_cliente' item.cliente.id %}"
+                                   class="btn btn-danger btn-sm">
+
+                                   <i class="fa fa-trash"></i>
+
+                                </a>
+                                {% endif %}
+
+                            </td>
+
+                        </tr>
+
+                        {% endfor %}
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+</body>
+
+</html>
