@@ -1,169 +1,44 @@
-<!DOCTYPE html>
-<html lang="es">
+{% extends 'base.html' %}
 
-<head>
+{% block content %}
 
-    <meta charset="UTF-8">
+<div class="container-fluid">
 
-    <title>Gestión Documental</title>
-
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet">
-
-    <link rel="stylesheet"
-          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-
-    <style>
-
-        body{
-            background: #f4f6f9;
-            font-family: Arial, sans-serif;
-        }
-
-        .sidebar{
-            width: 250px;
-            height: 100vh;
-            position: fixed;
-            background: #212529;
-            padding-top: 20px;
-        }
-
-        .sidebar a{
-            color: white;
-            text-decoration: none;
-            display: block;
-            padding: 15px 20px;
-            transition: 0.3s;
-        }
-
-        .sidebar a:hover{
-            background: #343a40;
-        }
-
-        .content{
-            margin-left: 260px;
-            padding: 30px;
-        }
-
-        .card-dashboard{
-            border: none;
-            border-radius: 15px;
-            color: white;
-        }
-
-        .table{
-            border-radius: 10px;
-            overflow: hidden;
-        }
-
-        .table thead{
-            background: #212529;
-            color: white;
-        }
-
-        .card{
-            border-radius: 15px;
-        }
-
-        .logout-form{
-            padding: 15px 20px;
-        }
-
-    </style>
-
-</head>
-
-<body>
-
-<div class="sidebar">
-
-    <h3 class="text-white text-center mb-4">
-        Gestión Documental
-    </h3>
-
-    <a href="{% url 'lista_clientes' %}">
-        <i class="fa fa-users"></i>
-        Clientes
-    </a>
-
-    {% if perms.clientes.add_cliente %}
-    <a href="{% url 'crear_cliente' %}">
-        <i class="fa fa-user-plus"></i>
-        Nuevo Cliente
-    </a>
-    {% endif %}
-
-    {% if perms.clientes.add_documento %}
-    <a href="{% url 'subir_documento' %}">
-        <i class="fa fa-file-upload"></i>
-        Subir Documento
-    </a>
-    {% endif %}
-
-    <a href="{% url 'lista_asesores' %}">
-        <i class="fa fa-user-tie"></i>
-        Asesores
-    </a>
-
-    <a href="{% url 'exportar_excel' %}">
-        <i class="fa fa-file-excel"></i>
-        Exportar Excel
-    </a>
-
-    {% if perms.clientes.view_auditoria %}
-    <a href="{% url 'panel_auditoria' %}">
-        <i class="fa fa-shield-halved"></i>
-        Auditoría
-    </a>
-    {% endif %}
-
-    <div class="logout-form">
-
-        <form action="{% url 'logout' %}" method="POST">
-
-            {% csrf_token %}
-
-            <button type="submit" class="btn btn-danger w-100">
-
-                <i class="fa fa-sign-out-alt"></i>
-                Cerrar Sesión
-
-            </button>
-
-        </form>
-
-    </div>
-
-</div>
-
-<div class="content">
-
-    <div class="d-flex justify-content-between align-items-center mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
 
         <div>
 
-            <h2>
+            <h2 class="fw-bold">
+
+                <i class="fa fa-chart-line"></i>
+
                 Dashboard Clientes
+
             </h2>
 
-            <p class="text-muted">
+            <p class="text-muted mb-0">
+
                 Gestión documental de clientes
+
             </p>
 
         </div>
 
     </div>
 
-    <div class="row mb-4">
+    <div class="row g-3 mb-4">
 
-        <div class="col-md-3">
+        <div class="col-lg-3 col-md-6 col-12">
 
-            <div class="card card-dashboard bg-primary shadow">
+            <div class="card bg-primary text-white shadow border-0 h-100">
 
                 <div class="card-body">
 
-                    <h5>Total Clientes</h5>
+                    <h6 class="text-uppercase">
+                        Total Clientes
+                    </h6>
 
-                    <h2>
+                    <h2 class="fw-bold">
                         {{ total_clientes }}
                     </h2>
 
@@ -173,15 +48,17 @@
 
         </div>
 
-        <div class="col-md-3">
+        <div class="col-lg-3 col-md-6 col-12">
 
-            <div class="card card-dashboard bg-success shadow">
+            <div class="card bg-success text-white shadow border-0 h-100">
 
                 <div class="card-body">
 
-                    <h5>Completos</h5>
+                    <h6 class="text-uppercase">
+                        Completos
+                    </h6>
 
-                    <h2>
+                    <h2 class="fw-bold">
                         {{ clientes_completos }}
                     </h2>
 
@@ -191,15 +68,17 @@
 
         </div>
 
-        <div class="col-md-3">
+        <div class="col-lg-3 col-md-6 col-12">
 
-            <div class="card card-dashboard bg-danger shadow">
+            <div class="card bg-danger text-white shadow border-0 h-100">
 
                 <div class="card-body">
 
-                    <h5>Incompletos</h5>
+                    <h6 class="text-uppercase">
+                        Incompletos
+                    </h6>
 
-                    <h2>
+                    <h2 class="fw-bold">
                         {{ clientes_incompletos }}
                     </h2>
 
@@ -209,15 +88,17 @@
 
         </div>
 
-        <div class="col-md-3">
+        <div class="col-lg-3 col-md-6 col-12">
 
-            <div class="card card-dashboard bg-dark shadow">
+            <div class="card bg-dark text-white shadow border-0 h-100">
 
                 <div class="card-body">
 
-                    <h5>Asesores</h5>
+                    <h6 class="text-uppercase">
+                        Asesores
+                    </h6>
 
-                    <h2>
+                    <h2 class="fw-bold">
                         {{ total_asesores }}
                     </h2>
 
@@ -235,9 +116,9 @@
 
             <form method="GET" class="mb-4">
 
-                <div class="row">
+                <div class="row g-3">
 
-                    <div class="col-md-5">
+                    <div class="col-lg-5 col-md-12">
 
                         <input
                             type="text"
@@ -247,7 +128,7 @@
 
                     </div>
 
-                    <div class="col-md-4">
+                    <div class="col-lg-4 col-md-12">
 
                         <select
                             name="asesor"
@@ -273,11 +154,13 @@
 
                     </div>
 
-                    <div class="col-md-3">
+                    <div class="col-lg-3 col-md-12">
 
                         <button
                             class="btn btn-dark w-100"
                             type="submit">
+
+                            <i class="fa fa-search"></i>
 
                             Filtrar
 
@@ -315,11 +198,15 @@
                         <tr>
 
                             <td>
+
                                 {{ item.cliente.nombre }}
+
                             </td>
 
                             <td>
+
                                 {{ item.cliente.documento }}
+
                             </td>
 
                             <td>
@@ -343,13 +230,17 @@
                                 {% if item.completo %}
 
                                     <span class="badge bg-success">
+
                                         Completo
+
                                     </span>
 
                                 {% else %}
 
                                     <span class="badge bg-danger">
+
                                         Incompleto
+
                                     </span>
 
                                 {% endif %}
@@ -362,7 +253,7 @@
 
                                     {% for faltante in item.faltantes %}
 
-                                        <span class="badge bg-warning text-dark">
+                                        <span class="badge bg-warning text-dark mb-1">
 
                                             {{ faltante }}
 
@@ -384,30 +275,50 @@
 
                             <td>
 
-                                <a href="{% url 'ver_documentos' item.cliente.id %}"
-                                   class="btn btn-info btn-sm">
+                                <div class="d-flex flex-wrap gap-1">
 
-                                   <i class="fa fa-eye"></i>
+                                    <a href="{% url 'ver_documentos' item.cliente.id %}"
+                                       class="btn btn-info btn-sm">
 
-                                </a>
+                                        <i class="fa fa-eye"></i>
 
-                                {% if perms.clientes.change_cliente %}
-                                <a href="{% url 'editar_cliente' item.cliente.id %}"
-                                   class="btn btn-warning btn-sm">
+                                    </a>
 
-                                   <i class="fa fa-edit"></i>
+                                    {% if perms.clientes.change_cliente %}
 
-                                </a>
-                                {% endif %}
+                                    <a href="{% url 'editar_cliente' item.cliente.id %}"
+                                       class="btn btn-warning btn-sm text-white">
 
-                                {% if perms.clientes.delete_cliente %}
-                                <a href="{% url 'eliminar_cliente' item.cliente.id %}"
-                                   class="btn btn-danger btn-sm">
+                                        <i class="fa fa-edit"></i>
 
-                                   <i class="fa fa-trash"></i>
+                                    </a>
 
-                                </a>
-                                {% endif %}
+                                    {% endif %}
+
+                                    {% if perms.clientes.delete_cliente %}
+
+                                    <a href="{% url 'eliminar_cliente' item.cliente.id %}"
+                                       class="btn btn-danger btn-sm">
+
+                                        <i class="fa fa-trash"></i>
+
+                                    </a>
+
+                                    {% endif %}
+
+                                </div>
+
+                            </td>
+
+                        </tr>
+
+                        {% empty %}
+
+                        <tr>
+
+                            <td colspan="6" class="text-center py-4">
+
+                                No hay clientes registrados
 
                             </td>
 
@@ -427,6 +338,4 @@
 
 </div>
 
-</body>
-
-</html>
+{% endblock %}

@@ -1,98 +1,29 @@
-<!DOCTYPE html>
-<html lang="es">
+{% extends 'base.html' %}
 
-<head>
+{% block content %}
 
-    <meta charset="UTF-8">
-
-    <title>Panel Auditoría</title>
-
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet">
-
-    <link rel="stylesheet"
-          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-
-    <style>
-
-        body{
-            background: #f4f6f9;
-            font-family: Arial, sans-serif;
-        }
-
-        .sidebar{
-            width: 250px;
-            height: 100vh;
-            position: fixed;
-            background: #212529;
-            padding-top: 20px;
-        }
-
-        .sidebar a{
-            color: white;
-            text-decoration: none;
-            display: block;
-            padding: 15px 20px;
-            transition: 0.3s;
-        }
-
-        .sidebar a:hover{
-            background: #343a40;
-        }
-
-        .content{
-            margin-left: 260px;
-            padding: 30px;
-        }
-
-        .card{
-            border-radius: 15px;
-        }
-
-    </style>
-
-</head>
-
-<body>
-
-<div class="sidebar">
-
-    <h3 class="text-white text-center mb-4">
-        Gestión Documental
-    </h3>
-
-    <a href="{% url 'lista_clientes' %}">
-        <i class="fa fa-users"></i>
-        Clientes
-    </a>
-
-    <a href="{% url 'panel_auditoria' %}">
-        <i class="fa fa-shield-halved"></i>
-        Auditoría
-    </a>
-
-    <a href="{% url 'logout' %}">
-        <i class="fa fa-right-from-bracket"></i>
-        Cerrar Sesión
-    </a>
-
-</div>
-
-<div class="content">
+<div class="container-fluid">
 
     <div class="card shadow border-0">
 
         <div class="card-body">
 
-            <div class="d-flex justify-content-between mb-4">
+            <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
 
                 <div>
 
-                    <h2>
+                    <h2 class="fw-bold">
+
+                        <i class="fa fa-shield-halved"></i>
+
                         Panel de Auditoría
+
                     </h2>
 
-                    <p class="text-muted">
+                    <p class="text-muted mb-0">
+
                         Historial de acciones realizadas por usuarios
+
                     </p>
 
                 </div>
@@ -101,9 +32,9 @@
 
             <form method="GET" class="mb-4">
 
-                <div class="row">
+                <div class="row g-3">
 
-                    <div class="col-md-10">
+                    <div class="col-lg-10 col-md-9 col-12">
 
                         <input
                             type="text"
@@ -113,11 +44,13 @@
 
                     </div>
 
-                    <div class="col-md-2">
+                    <div class="col-lg-2 col-md-3 col-12">
 
                         <button
                             class="btn btn-dark w-100"
                             type="submit">
+
+                            <i class="fa fa-search"></i>
 
                             Buscar
 
@@ -153,7 +86,7 @@
 
                             <td>
 
-                                <span class="badge bg-dark">
+                                <span class="badge bg-dark p-2">
 
                                     {{ auditoria.usuario.username }}
 
@@ -175,6 +108,18 @@
 
                         </tr>
 
+                        {% empty %}
+
+                        <tr>
+
+                            <td colspan="3" class="text-center py-4">
+
+                                No hay registros de auditoría
+
+                            </td>
+
+                        </tr>
+
                         {% endfor %}
 
                     </tbody>
@@ -189,6 +134,4 @@
 
 </div>
 
-</body>
-
-</html>
+{% endblock %}

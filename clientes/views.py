@@ -6,6 +6,7 @@ import openpyxl
 from django.contrib.auth.decorators import permission_required
 from .models import *
 from .forms import *
+from django import forms
 
 
 @login_required
@@ -117,33 +118,47 @@ def lista_clientes(request):
 
         }
     )
-@permission_required('clientes.add_cliente')
 @login_required
+@permission_required('clientes.add_cliente')
 def crear_cliente(request):
 
-    form = ClienteForm(
-        request.POST or None
-    )
+    if request.method == 'POST':
 
-    if form.is_valid():
+        form = ClienteForm(request.POST)
 
-        cliente = form.save()
+        if form.is_valid():
 
-        Auditoria.objects.create(
+            cliente = form.save(commit=False)
 
-            usuario=request.user,
+            # =========================
+            # ASIGNAR ASESOR AUTOMÁTICO
+            # =========================
 
-            accion=f'Creó cliente {cliente.nombre}'
-        )
+            if not request.user.is_superuser:
 
-        return redirect(
-            'lista_clientes'
-        )
+                asesor = Asesor.objects.get(
+                    usuario=request.user
+                )
+
+                cliente.asesor = asesor
+
+            cliente.save()
+
+            return redirect('lista_clientes')
+
+    else:
+
+        form = ClienteForm()
+
+    # =========================
+    # OCULTAR CAMPO ASESOR
+    # =========================
+
+    form.fields['asesor'].widget = forms.HiddenInput()
 
     return render(
 
         request,
-
         'clientes/crear_cliente.html',
 
         {
