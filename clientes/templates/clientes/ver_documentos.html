@@ -44,7 +44,11 @@
                                 <tr>
 
                                     <th>Documento</th>
-                                    <th>Estado</th>
+
+                                    <th>Estado Documento</th>
+
+                                    <th>Revisión Cartera</th>
+
                                     <th class="text-center">
 
                                         Acciones
@@ -61,11 +65,15 @@
 
                                 <tr>
 
+                                    <!-- DOCUMENTO -->
+
                                     <td>
 
                                         {{ item.nombre }}
 
                                     </td>
+
+                                    <!-- ESTADO DOCUMENTO -->
 
                                     <td>
 
@@ -89,11 +97,73 @@
 
                                     </td>
 
+                                    <!-- ESTADO CARTERA -->
+
+                                    <td>
+
+                                        {% if item.existe %}
+
+                                            {% if item.archivo.estado == 'pendiente' %}
+
+                                                <span class="badge bg-warning text-dark">
+
+                                                    Pendiente
+
+                                                </span>
+
+                                            {% elif item.archivo.estado == 'aprobado' %}
+
+                                                <span class="badge bg-success">
+
+                                                    Aprobado
+
+                                                </span>
+
+                                            {% elif item.archivo.estado == 'rechazado' %}
+
+                                                <span class="badge bg-danger">
+
+                                                    Rechazado
+
+                                                </span>
+
+                                            {% endif %}
+
+                                            {% if item.archivo.observacion %}
+
+                                                <div class="mt-2">
+
+                                                    <small class="text-muted">
+
+                                                        {{ item.archivo.observacion }}
+
+                                                    </small>
+
+                                                </div>
+
+                                            {% endif %}
+
+                                        {% else %}
+
+                                            <span class="text-muted">
+
+                                                Sin revisión
+
+                                            </span>
+
+                                        {% endif %}
+
+                                    </td>
+
+                                    <!-- ACCIONES -->
+
                                     <td class="text-center">
 
                                         <div class="d-flex justify-content-center flex-wrap gap-2">
 
                                             {% if item.existe %}
+
+                                                <!-- VER -->
 
                                                 <a href="{{ item.archivo.archivo.url }}"
                                                    target="_blank"
@@ -105,6 +175,8 @@
 
                                                 </a>
 
+                                                <!-- ACTUALIZAR -->
+
                                                 <a href="{% url 'actualizar_documento' item.archivo.id %}"
                                                    class="btn btn-warning btn-sm text-white">
 
@@ -113,6 +185,21 @@
                                                     Actualizar
 
                                                 </a>
+
+                                                <!-- REVISAR SOLO ADMIN -->
+
+                                                {% if request.user.is_superuser %}
+
+                                                <a href="{% url 'revisar_documento' item.archivo.id %}"
+                                                   class="btn btn-dark btn-sm">
+
+                                                    Revisar
+
+                                                </a>
+
+                                                {% endif %}
+
+                                                <!-- ELIMINAR -->
 
                                                 <a href="{% url 'eliminar_documento' item.archivo.id %}"
                                                    class="btn btn-danger btn-sm">
@@ -125,7 +212,9 @@
 
                                             {% else %}
 
-                                                <a href="{% url 'subir_documento' %}"
+                                                <!-- SUBIR AUTOMATICO -->
+
+                                                <a href="{% url 'subir_documento' %}?cliente={{ cliente.id }}&tipo={{ item.tipo }}"
                                                    class="btn btn-primary btn-sm">
 
                                                     <i class="fa fa-upload"></i>
@@ -146,7 +235,8 @@
 
                                 <tr>
 
-                                    <td colspan="3" class="text-center py-4">
+                                    <td colspan="4"
+                                        class="text-center py-4">
 
                                         No hay documentos registrados
 

@@ -30,6 +30,10 @@
 
                         {% csrf_token %}
 
+                        <!-- =========================
+                             CLIENTE
+                        ========================= -->
+
                         <div class="mb-4">
 
                             <label class="form-label fw-bold">
@@ -42,6 +46,10 @@
 
                         </div>
 
+                        <!-- =========================
+                             TIPO DOCUMENTO
+                        ========================= -->
+
                         <div class="mb-4">
 
                             <label class="form-label fw-bold">
@@ -53,6 +61,10 @@
                             {{ form.tipo }}
 
                         </div>
+
+                        <!-- =========================
+                             NOMBRE PERSONALIZADO
+                        ========================= -->
 
                         <div
                             class="mb-4"
@@ -69,6 +81,10 @@
 
                         </div>
 
+                        <!-- =========================
+                             ARCHIVO
+                        ========================= -->
+
                         <div class="mb-4">
 
                             <label class="form-label fw-bold">
@@ -80,6 +96,10 @@
                             {{ form.archivo }}
 
                         </div>
+
+                        <!-- =========================
+                             BOTONES
+                        ========================= -->
 
                         <div class="d-flex flex-wrap gap-2 mt-4">
 
@@ -118,6 +138,10 @@
 
 <script>
 
+    // =========================
+    // MOSTRAR CAMPO OTRO
+    // =========================
+
     const tipoDocumento =
         document.getElementById('id_tipo');
 
@@ -143,6 +167,44 @@
     );
 
     validarOtro();
+
+    // =========================
+    // BLOQUEAR CAMPOS
+    // SI VIENEN POR URL
+    // =========================
+
+    const url =
+        new URLSearchParams(window.location.search);
+
+    const cliente =
+        url.get('cliente');
+
+    const tipo =
+        url.get('tipo');
+
+    if (cliente) {
+
+        document.getElementById('id_cliente')
+            .setAttribute('readonly', true);
+
+        document.getElementById('id_cliente')
+            .style.pointerEvents = 'none';
+
+        document.getElementById('id_cliente')
+            .style.background = '#e9ecef';
+    }
+
+    if (tipo) {
+
+        document.getElementById('id_tipo')
+            .setAttribute('readonly', true);
+
+        document.getElementById('id_tipo')
+            .style.pointerEvents = 'none';
+
+        document.getElementById('id_tipo')
+            .style.background = '#e9ecef';
+    }
 
 </script>
 

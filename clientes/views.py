@@ -1,22 +1,83 @@
+# =========================
+# IMPORTS
+# =========================
+
 from django.shortcuts import render, redirect
 from django.http import HttpResponse
 from django.contrib.auth import authenticate, login, logout
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import (
+    login_required,
+    permission_required
+)
+
+from django.core.exceptions import PermissionDenied
+
 import openpyxl
-from django.contrib.auth.decorators import permission_required
+
 from .models import *
 from .forms import *
+
 from django import forms
 
+
+# =========================
+# VALIDAR ACCESO CLIENTES
+# =========================
+
+def validar_cliente_usuario(request, cliente):
+
+    if request.user.is_superuser:
+
+        return True
+
+    asesor = Asesor.objects.filter(
+        usuario=request.user
+    ).first()
+
+    if asesor and cliente.asesor == asesor:
+
+        return True
+
+    raise PermissionDenied
+
+
+# =========================
+# LISTA CLIENTES
+# =========================
 
 @login_required
 def lista_clientes(request):
 
     busqueda = request.GET.get('busqueda')
-
     asesor_id = request.GET.get('asesor')
 
-    clientes = Cliente.objects.all()
+    # =========================
+    # ADMIN VE TODO
+    # =========================
+
+    if request.user.is_superuser:
+
+        clientes = Cliente.objects.all()
+
+    else:
+
+        asesor = Asesor.objects.filter(
+            usuario=request.user
+        ).first()
+
+        if asesor:
+
+            clientes = Cliente.objects.filter(
+                asesor=asesor
+            )
+
+        else:
+
+            clientes = Cliente.objects.none()
+
+    # =========================
+    # FILTROS
+    # =========================
 
     if busqueda:
 
@@ -24,13 +85,15 @@ def lista_clientes(request):
             nombre__icontains=busqueda
         )
 
-    if asesor_id:
+    if asesor_id and request.user.is_superuser:
 
         clientes = clientes.filter(
             asesor_id=asesor_id
         )
 
-    data = []
+    # =========================
+    # DOCUMENTOS
+    # =========================
 
     documentos_requeridos = [
         'vinculacion',
@@ -39,87 +102,77 @@ def lista_clientes(request):
         'cedula'
     ]
 
+    data = []
+
     for cliente in clientes:
 
-        documentos_subidos = Documento.objects.filter(
+        documentos = Documento.objects.filter(
             cliente=cliente
-        ).values_list(
-            'tipo',
-            flat=True
         )
 
-        faltantes = [
+        # mapa por tipo (más eficiente)
+        documentos_por_tipo = {
+            d.tipo: d for d in documentos
+        }
 
-            doc for doc in documentos_requeridos
+        completo = True
+        faltantes = []
 
-            if doc not in documentos_subidos
-        ]
+        for doc in documentos_requeridos:
+
+            documento = documentos_por_tipo.get(doc)
+
+            # NO existe documento
+            if not documento:
+                completo = False
+                faltantes.append(doc)
+                continue
+
+            # existe pero NO aprobado
+            if documento.estado != 'aprobado':
+                completo = False
 
         data.append({
-
             'cliente': cliente,
-
             'faltantes': faltantes,
-
-            'completo': len(faltantes) == 0
-
+            'completo': completo
         })
 
     asesores = Asesor.objects.all()
 
-    total_clientes = Cliente.objects.count()
+    total_clientes = clientes.count()
 
-    clientes_completos = 0
+    clientes_completos = len([
+        x for x in data if x['completo']
+    ])
 
-    clientes_incompletos = 0
+    clientes_incompletos = len([
+        x for x in data if not x['completo']
+    ])
 
-    for item in data:
-
-        if item['completo']:
-
-            clientes_completos += 1
-
-        else:
-
-            clientes_incompletos += 1
-
-    total_asesores = Asesor.objects.count()
-
-    clientes_por_asesor = []
-
-    for asesor in asesores:
-
-        cantidad = Cliente.objects.filter(
-            asesor=asesor
-        ).count()
-
-        clientes_por_asesor.append({
-
-            'nombre': asesor.nombre,
-            'cantidad': cantidad
-
-        })
+    total_asesores = asesores.count()
 
     return render(
-
         request,
-
         'clientes/lista_clientes.html',
-
         {
-
             'data': data,
             'asesores': asesores,
             'total_clientes': total_clientes,
             'clientes_completos': clientes_completos,
             'clientes_incompletos': clientes_incompletos,
-            'total_asesores': total_asesores,
-            'clientes_por_asesor': clientes_por_asesor
-
+            'total_asesores': total_asesores
         }
     )
+# =========================
+# CREAR CLIENTE
+# =========================
+
 @login_required
-@permission_required('clientes.add_cliente')
+@permission_required(
+    'clientes.add_cliente',
+    raise_exception=True
+)
 def crear_cliente(request):
 
     if request.method == 'POST':
@@ -136,13 +189,22 @@ def crear_cliente(request):
 
             if not request.user.is_superuser:
 
-                asesor = Asesor.objects.get(
+                asesor = Asesor.objects.filter(
                     usuario=request.user
-                )
+                ).first()
 
-                cliente.asesor = asesor
+                if asesor:
+
+                    cliente.asesor = asesor
 
             cliente.save()
+
+            Auditoria.objects.create(
+
+                usuario=request.user,
+
+                accion=f'Creó cliente {cliente.nombre}'
+            )
 
             return redirect('lista_clientes')
 
@@ -154,22 +216,40 @@ def crear_cliente(request):
     # OCULTAR CAMPO ASESOR
     # =========================
 
-    form.fields['asesor'].widget = forms.HiddenInput()
+    if not request.user.is_superuser:
+
+        form.fields['asesor'].widget = forms.HiddenInput()
 
     return render(
 
         request,
+
         'clientes/crear_cliente.html',
 
         {
             'form': form
         }
     )
+
+
+# =========================
+# EDITAR CLIENTE
+# =========================
+
 @login_required
+@permission_required(
+    'clientes.change_cliente',
+    raise_exception=True
+)
 def editar_cliente(request, cliente_id):
 
     cliente = Cliente.objects.get(
         id=cliente_id
+    )
+
+    validar_cliente_usuario(
+        request,
+        cliente
     )
 
     form = ClienteForm(
@@ -182,6 +262,13 @@ def editar_cliente(request, cliente_id):
     if form.is_valid():
 
         form.save()
+
+        Auditoria.objects.create(
+
+            usuario=request.user,
+
+            accion=f'Editó cliente {cliente.nombre}'
+        )
 
         return redirect(
             'lista_clientes'
@@ -198,6 +285,11 @@ def editar_cliente(request, cliente_id):
         }
     )
 
+
+# =========================
+# ELIMINAR CLIENTE
+# =========================
+
 @login_required
 @permission_required(
     'clientes.delete_cliente',
@@ -207,6 +299,11 @@ def eliminar_cliente(request, cliente_id):
 
     cliente = Cliente.objects.get(
         id=cliente_id
+    )
+
+    validar_cliente_usuario(
+        request,
+        cliente
     )
 
     Auditoria.objects.create(
@@ -222,8 +319,25 @@ def eliminar_cliente(request, cliente_id):
         'lista_clientes'
     )
 
+
+# =========================
+# SUBIR DOCUMENTO
+# =========================
+
+# =========================
+# SUBIR DOCUMENTO
+# =========================
+
 @login_required
+@permission_required(
+    'clientes.add_documento',
+    raise_exception=True
+)
 def subir_documento(request):
+
+    cliente_id = request.GET.get('cliente')
+
+    tipo = request.GET.get('tipo')
 
     form = DocumentoForm(
 
@@ -231,6 +345,38 @@ def subir_documento(request):
 
         request.FILES or None
     )
+
+    # =========================
+    # AUTOCOMPLETAR CLIENTE
+    # =========================
+
+    if cliente_id:
+
+        form.fields['cliente'].initial = cliente_id
+
+    # =========================
+    # AUTOCOMPLETAR TIPO
+    # =========================
+
+    if tipo:
+
+        form.fields['tipo'].initial = tipo
+
+    # =========================
+    # FILTRAR CLIENTES ASESOR
+    # =========================
+
+    if not request.user.is_superuser:
+
+        asesor = Asesor.objects.filter(
+            usuario=request.user
+        ).first()
+
+        if asesor:
+
+            form.fields['cliente'].queryset = Cliente.objects.filter(
+                asesor=asesor
+            )
 
     if form.is_valid():
 
@@ -244,7 +390,8 @@ def subir_documento(request):
         )
 
         return redirect(
-            'lista_clientes'
+            'ver_documentos',
+            cliente_id=documento.cliente.id
         )
 
     return render(
@@ -257,11 +404,20 @@ def subir_documento(request):
             'form': form
         }
     )
+# =========================
+# VER DOCUMENTOS
+# =========================
+
 @login_required
 def ver_documentos(request, cliente_id):
 
     cliente = Cliente.objects.get(
         id=cliente_id
+    )
+
+    validar_cliente_usuario(
+        request,
+        cliente
     )
 
     documentos = Documento.objects.filter(
@@ -286,6 +442,10 @@ def ver_documentos(request, cliente_id):
 
     data = []
 
+    # =========================
+    # DOCUMENTOS REQUERIDOS
+    # =========================
+
     for clave, nombre in documentos_requeridos.items():
 
         documento = documentos.filter(
@@ -296,17 +456,25 @@ def ver_documentos(request, cliente_id):
 
             'nombre': nombre,
 
+            'tipo': clave,
+
             'existe': documento is not None,
 
             'archivo': documento
 
         })
 
+    # =========================
+    # DOCUMENTOS PERSONALIZADOS
+    # =========================
+
     for documento in documentos_personalizados:
 
         data.append({
 
             'nombre': documento.nombre_personalizado,
+
+            'tipo': 'otro',
 
             'existe': True,
 
@@ -328,12 +496,24 @@ def ver_documentos(request, cliente_id):
 
         }
     )
+# =========================
+# ACTUALIZAR DOCUMENTO
+# =========================
 
 @login_required
+@permission_required(
+    'clientes.change_documento',
+    raise_exception=True
+)
 def actualizar_documento(request, documento_id):
 
     documento = Documento.objects.get(
         id=documento_id
+    )
+
+    validar_cliente_usuario(
+        request,
+        documento.cliente
     )
 
     form = DocumentoForm(
@@ -348,6 +528,13 @@ def actualizar_documento(request, documento_id):
     if form.is_valid():
 
         form.save()
+
+        Auditoria.objects.create(
+
+            usuario=request.user,
+
+            accion=f'Actualizó documento de {documento.cliente.nombre}'
+        )
 
         return redirect(
 
@@ -369,7 +556,52 @@ def actualizar_documento(request, documento_id):
         }
     )
 
+
+# =========================
+# ELIMINAR DOCUMENTO
+# =========================
+
 @login_required
+@permission_required(
+    'clientes.delete_documento',
+    raise_exception=True
+)
+def eliminar_documento(request, documento_id):
+
+    documento = Documento.objects.get(
+        id=documento_id
+    )
+
+    validar_cliente_usuario(
+        request,
+        documento.cliente
+    )
+
+    cliente_id = documento.cliente.id
+
+    Auditoria.objects.create(
+
+        usuario=request.user,
+
+        accion=f'Eliminó documento de {documento.cliente.nombre}'
+    )
+
+    documento.delete()
+
+    return redirect(
+        'ver_documentos',
+        cliente_id=cliente_id
+    )
+
+# =========================
+# LISTA ASESORES
+# =========================
+
+@login_required
+@permission_required(
+    'clientes.view_asesor',
+    raise_exception=True
+)
 def lista_asesores(request):
 
     asesores = Asesor.objects.all()
@@ -385,7 +617,16 @@ def lista_asesores(request):
         }
     )
 
+
+# =========================
+# CREAR ASESOR
+# =========================
+
 @login_required
+@permission_required(
+    'clientes.add_asesor',
+    raise_exception=True
+)
 def crear_asesor(request):
 
     form = AsesorForm(
@@ -395,6 +636,13 @@ def crear_asesor(request):
     if form.is_valid():
 
         form.save()
+
+        Auditoria.objects.create(
+
+            usuario=request.user,
+
+            accion='Creó un asesor'
+        )
 
         return redirect(
             'lista_asesores'
@@ -411,7 +659,16 @@ def crear_asesor(request):
         }
     )
 
+
+# =========================
+# EDITAR ASESOR
+# =========================
+
 @login_required
+@permission_required(
+    'clientes.change_asesor',
+    raise_exception=True
+)
 def editar_asesor(request, asesor_id):
 
     asesor = Asesor.objects.get(
@@ -429,6 +686,13 @@ def editar_asesor(request, asesor_id):
 
         form.save()
 
+        Auditoria.objects.create(
+
+            usuario=request.user,
+
+            accion=f'Editó asesor {asesor.nombre}'
+        )
+
         return redirect(
             'lista_asesores'
         )
@@ -443,6 +707,11 @@ def editar_asesor(request, asesor_id):
             'form': form
         }
     )
+
+
+# =========================
+# ELIMINAR ASESOR
+# =========================
 
 @login_required
 @permission_required(
@@ -464,14 +733,21 @@ def eliminar_asesor(request, asesor_id):
         usuario=request.user,
 
         accion=f'Eliminó asesor {nombre_asesor}'
-
     )
 
     return redirect(
         'lista_asesores'
     )
 
+# =========================
+# EXPORTAR EXCEL
+# =========================
+
 @login_required
+@permission_required(
+    'clientes.view_cliente',
+    raise_exception=True
+)
 def exportar_excel(request):
 
     response = HttpResponse(
@@ -501,9 +777,26 @@ def exportar_excel(request):
 
     worksheet.append(columnas)
 
-    clientes = Cliente.objects.all()
+    # =========================
+    # SUPERUSUARIO VE TODO
+    # =========================
+
+    if request.user.is_superuser:
+
+        clientes = Cliente.objects.all()
+
+    else:
+
+        asesor = Asesor.objects.filter(
+            usuario=request.user
+        ).first()
+
+        clientes = Cliente.objects.filter(
+            asesor=asesor
+        )
 
     documentos_requeridos = [
+
         'vinculacion',
         'rut',
         'camara',
@@ -558,92 +851,102 @@ def exportar_excel(request):
 
     return response
 
-@login_required
-def eliminar_documento(request, documento_id):
-
-    documento = Documento.objects.get(
-        id=documento_id
-    )
-
-    cliente_id = documento.cliente.id
-
-    documento.delete()
-
-    return redirect(
-        'ver_documentos',
-        cliente_id=cliente_id
-    )
-
-def login_view(request):
-
-    if request.method == 'POST':
-
-        username = request.POST.get('username')
-
-        password = request.POST.get('password')
-
-        user = authenticate(
-
-            request,
-
-            username=username,
-
-            password=password
-        )
-
-        if user:
-
-            login(request, user)
-
-            return redirect('lista_clientes')
-
-    return render(
-        request,
-        'clientes/login.html'
-    )
-
-
-def logout_view(request):
-
-    logout(request)
-
-    return redirect('login')
+# =========================
+# LOGIN
+# =========================
 
 def login_view(request):
 
     if request.user.is_authenticated:
 
-        return redirect('lista_clientes')
+        return redirect(
+            'lista_clientes'
+        )
 
     if request.method == 'POST':
 
-        username = request.POST.get('username')
+        username = request.POST.get(
+            'username'
+        )
 
-        password = request.POST.get('password')
+        password = request.POST.get(
+            'password'
+        )
 
         user = authenticate(
+
             request,
+
             username=username,
+
             password=password
         )
 
         if user is not None:
 
-            login(request, user)
+            login(
+                request,
+                user
+            )
 
-            return redirect('lista_clientes')
+            Auditoria.objects.create(
+
+                usuario=user,
+
+                accion='Inició sesión'
+            )
+
+            return redirect(
+                'lista_clientes'
+            )
 
     return render(
+
         request,
+
         'clientes/login.html'
     )
 
+
+# =========================
+# LOGOUT
+# =========================
+
 @login_required
+def logout_view(request):
+
+    Auditoria.objects.create(
+
+        usuario=request.user,
+
+        accion='Cerró sesión'
+    )
+
+    logout(request)
+
+    return redirect(
+        'login'
+    )
+
+
+# =========================
+# PANEL AUDITORIA
+# =========================
+
+@login_required
+@permission_required(
+    'clientes.view_auditoria',
+    raise_exception=True
+)
 def panel_auditoria(request):
 
-    busqueda = request.GET.get('busqueda')
+    busqueda = request.GET.get(
+        'busqueda'
+    )
 
-    auditorias = Auditoria.objects.all().order_by('-fecha')
+    auditorias = Auditoria.objects.all().order_by(
+        '-fecha'
+    )
 
     if busqueda:
 
@@ -660,5 +963,53 @@ def panel_auditoria(request):
 
         {
             'auditorias': auditorias
+        }
+    )
+
+@login_required
+@permission_required(
+    'clientes.change_documento',
+    raise_exception=True
+)
+def revisar_documento(request, documento_id):
+
+    documento = Documento.objects.get(
+        id=documento_id
+    )
+
+    form = RevisarDocumentoForm(
+
+        request.POST or None,
+
+        instance=documento
+    )
+
+    if form.is_valid():
+
+        form.save()
+
+        Auditoria.objects.create(
+
+            usuario=request.user,
+
+            accion=f'Revisó documento {documento.tipo} de {documento.cliente.nombre}'
+        )
+
+        return redirect(
+
+            'ver_documentos',
+
+            cliente_id=documento.cliente.id
+        )
+
+    return render(
+
+        request,
+
+        'clientes/revisar_documento.html',
+
+        {
+            'form': form,
+            'documento': documento
         }
     )

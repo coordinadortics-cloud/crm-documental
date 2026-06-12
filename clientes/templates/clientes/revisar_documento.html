@@ -1,0 +1,150 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<div class="container">
+
+    <div class="row justify-content-center">
+
+        <div class="col-md-8">
+
+            <div class="card shadow border-0">
+
+                <div class="card-header bg-dark text-white">
+
+                    <h4>
+
+                        <i class="fa fa-file-check"></i>
+
+                        Revisar Documento
+
+                    </h4>
+
+                </div>
+
+                <div class="card-body">
+
+                    <h5>
+
+                        Cliente:
+                        <strong>
+
+                            {{ documento.cliente.nombre }}
+
+                        </strong>
+
+                    </h5>
+
+                    <hr>
+
+                    <p>
+
+                        <strong>Documento:</strong>
+
+                        {{ documento.get_tipo_display }}
+
+                    </p>
+
+                    <p>
+
+                        <strong>Estado actual:</strong>
+
+                        {% if documento.estado == 'pendiente' %}
+
+                            <span class="badge bg-warning text-dark">
+
+                                Pendiente
+
+                            </span>
+
+                        {% elif documento.estado == 'aprobado' %}
+
+                            <span class="badge bg-success">
+
+                                Aprobado
+
+                            </span>
+
+                        {% elif documento.estado == 'rechazado' %}
+
+                            <span class="badge bg-danger">
+
+                                Rechazado
+
+                            </span>
+
+                        {% endif %}
+
+                    </p>
+
+                    <div class="mb-3">
+
+                        <a href="{{ documento.archivo.url }}"
+                           target="_blank"
+                           class="btn btn-info">
+
+                            <i class="fa fa-eye"></i>
+
+                            Ver Documento
+
+                        </a>
+
+                    </div>
+
+                    <form method="POST">
+
+                        {% csrf_token %}
+
+                        <div class="mb-3">
+
+                            <label class="form-label">
+
+                                Estado
+
+                            </label>
+
+                            {{ form.estado }}
+
+                        </div>
+
+                        <div class="mb-3">
+
+                            <label class="form-label">
+
+                                Observación
+
+                            </label>
+
+                            {{ form.observacion }}
+                            
+                        </div>
+
+                        <button type="submit"
+                                class="btn btn-success">
+
+                            <i class="fa fa-save"></i>
+
+                            Guardar Revisión
+
+                        </button>
+
+                        <a href="{% url 'ver_documentos' documento.cliente.id %}"
+                           class="btn btn-secondary">
+
+                            Volver
+
+                        </a>
+
+                    </form>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}

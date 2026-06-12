@@ -83,28 +83,70 @@ class Documento(models.Model):
 
     ]
 
+    # =========================
+    # ESTADOS DOCUMENTO
+    # =========================
+
+    ESTADOS = [
+
+        ('pendiente', 'Pendiente'),
+        ('aprobado', 'Aprobado'),
+        ('rechazado', 'Rechazado')
+
+    ]
+
     cliente = models.ForeignKey(
+
         Cliente,
+
         on_delete=models.CASCADE,
+
         related_name='documentos'
     )
 
     tipo = models.CharField(
+
         max_length=50,
+
         choices=TIPOS
     )
 
     nombre_personalizado = models.CharField(
+
         max_length=200,
+
         blank=True,
+
         null=True
     )
 
     archivo = models.FileField(
+
         upload_to=ruta_documentos
     )
 
+    # =========================
+    # ESTADO REVISIÓN CARTERA
+    # =========================
+
+    estado = models.CharField(
+
+        max_length=20,
+
+        choices=ESTADOS,
+
+        default='pendiente'
+    )
+
+    observacion = models.TextField(
+
+        blank=True,
+
+        null=True
+    )
+
     fecha_subida = models.DateTimeField(
+
         auto_now_add=True
     )
 
@@ -116,38 +158,82 @@ class Documento(models.Model):
 
         return self.get_tipo_display()
 
+    # =========================
+    # GUARDAR Y COMPRIMIR
+    # =========================
+
     def save(self, *args, **kwargs):
 
         super().save(*args, **kwargs)
 
-        ruta = self.archivo.path
+        # =========================
+        # VALIDAR ARCHIVO
+        # =========================
 
-        extension = os.path.splitext(ruta)[1].lower()
+        if not self.archivo:
 
-        if extension in ['.jpg', '.jpeg', '.png']:
+            return
 
-            imagen = Image.open(ruta)
+        try:
 
-            if imagen.mode in ("RGBA", "P"):
+            ruta = self.archivo.path
 
-                imagen = imagen.convert("RGB")
+            extension = os.path.splitext(
+                ruta
+            )[1].lower()
 
-            imagen.save(
-                ruta,
-                optimize=True,
-                quality=60
-            )
+            # =========================
+            # COMPRIMIR IMAGENES
+            # =========================
 
-        elif extension == '.pdf':
+            if extension in [
 
-            pdf = pikepdf.Pdf.open(
-                ruta,
-                allow_overwriting_input=True
-            )
+                '.jpg',
+                '.jpeg',
+                '.png'
+            ]:
 
-            pdf.save(
-                ruta,
-                compress_streams=True
+                imagen = Image.open(ruta)
+
+                if imagen.mode in ("RGBA", "P"):
+
+                    imagen = imagen.convert("RGB")
+
+                imagen.save(
+
+                    ruta,
+
+                    optimize=True,
+
+                    quality=60
+                )
+
+            # =========================
+            # COMPRIMIR PDF
+            # =========================
+
+            elif extension == '.pdf':
+
+                pdf = pikepdf.Pdf.open(
+
+                    ruta,
+
+                    allow_overwriting_input=True
+                )
+
+                pdf.save(
+
+                    ruta,
+
+                    compress_streams=True
+                )
+
+        except Exception as e:
+
+            print(
+
+                "ERROR AL PROCESAR ARCHIVO:",
+                e
             )
 
 class Auditoria(models.Model):
@@ -170,3 +256,4 @@ class Auditoria(models.Model):
 
         return f"{self.usuario} - {self.accion}"
     
+

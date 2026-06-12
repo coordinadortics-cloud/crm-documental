@@ -100,5 +100,14 @@ path(
     name='panel_auditoria'
 ),
 
+path(
+
+    'revisar-documento/<int:documento_id>/',
+
+    views.revisar_documento,
+
+    name='revisar_documento'
+),
+
 ]
 
