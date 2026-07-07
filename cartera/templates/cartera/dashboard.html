@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<div class="container mt-5">
+
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-success">
+                {{ message }}
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <div class="card shadow">
+
+        <div class="card-header bg-primary text-white">
+
+            <h3>Módulo de Cartera</h3>
+
+        </div>
+
+        <div class="card-body">
+
+            <a href="{% url 'importar_cartera' %}" class="btn btn-success">
+                Importar Cartera
+            </a>
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}
