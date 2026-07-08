@@ -1,8 +1,12 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
+from django.db.models import Q
 
-from .forms import ImportarCarteraForm
-from .models import ImportacionCartera
+from .forms import ImportarCarteraForm, BuscarClienteForm
+from .models import (
+    ImportacionCartera,
+    ClienteCartera,
+)
 from .services.importador_cartera import ImportadorCartera
 
 
@@ -71,4 +75,67 @@ Tiempo de importación: {resultado['tiempo']} segundos.
         {
             "form": form
         }
+    )
+
+
+# ===========================
+# MÓDULO 2
+# ===========================
+
+def consultar_cliente(request):
+
+    form = BuscarClienteForm()
+
+    clientes = None
+
+    if request.method == "POST":
+
+        form = BuscarClienteForm(request.POST)
+
+        if form.is_valid():
+
+            busqueda = form.cleaned_data["busqueda"].strip()
+
+            clientes = ClienteCartera.objects.filter(
+                Q(nit__icontains=busqueda) |
+                Q(cliente__icontains=busqueda)
+            ).order_by("cliente")
+
+            if not clientes.exists():
+
+                messages.error(
+                    request,
+                    "No se encontraron clientes."
+                )
+
+    return render(
+        request,
+        "cartera/consultar_cliente.html",
+        {
+            "form": form,
+            "clientes": clientes,
+        },
+    )
+
+
+def ver_cliente(request, id):
+
+    cliente = get_object_or_404(
+        ClienteCartera,
+        id=id
+    )
+
+    facturas = sorted(
+        cliente.facturas.all(),
+        key=lambda x: x.dias_mora,
+        reverse=True
+    )
+
+    return render(
+        request,
+        "cartera/ver_cliente.html",
+        {
+            "cliente": cliente,
+            "facturas": facturas,
+        },
     )
